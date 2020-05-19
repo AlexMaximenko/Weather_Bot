@@ -1,9 +1,9 @@
 import telebot
+import config
 
-token = "1269369397:AAFMfPxUtsfBAzHwC9gQqwnlagQUPqo_3s4"
-bot = telebot.TeleBot(token)
+bot = telebot.TeleBot(config.BOT_TOKEN)
 
-@bot.message_handler(commands=['start'])
+@bot.message_handler(commands=['start', 'help'])
 def start_message(message):
     bot.send_message(message.chat.id, 'Привет, ты написал мне /start')
 
