@@ -1,7 +1,7 @@
 import pyowm
 from config import OWM_TOKEN
 
-owm = pyowm.OWM(OWM_TOKEN)
+owm = pyowm.OWM(OWM_TOKEN, language='ru')
 
 def get_weather(city):
     observation = owm.weather_at_place(city)
