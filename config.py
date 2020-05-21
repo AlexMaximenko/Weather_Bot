@@ -1,0 +1,4 @@
+# config
+
+BOT_TOKEN = "1269369397:AAFMfPxUtsfBAzHwC9gQqwnlagQUPqo_3s4"
+OWM_TOKEN = "6b2fbbd716336e457a67392c8ec3ca4b"
