@@ -21,11 +21,11 @@ months = {1: 'Январь',
 def get_weather(city):
     observation = owm.weather_at_place(city)
     weather = observation.get_weather()
-    temperature = weather.get_temperature('celsius')["temp"]
-    wind = weather.get_wind()['speed']
+    temperature = "%.1f"%(weather.get_temperature('celsius')["temp"])
+    wind = "%.1f"%(weather.get_wind()['speed'])
     clouds = weather.get_clouds()
     humidity = weather.get_humidity()
-    weather = f"В городе {city} сейчас {weather.get_detailed_status()} \nТемпература: {temperature} °C \nВетер: {wind} m/s \nОблачность: {clouds} % \nВлажность: {humidity} %"
+    weather = f"В городе {city} сейчас {weather.get_detailed_status()}, \n🌡️ {temperature} °C \n💨 {wind} m/s \n🌫️ {clouds} % \n💦 {humidity} %"
     return weather
 
 def get_forecast(city, days):
@@ -41,7 +41,8 @@ def get_forecast(city, days):
         ref_time = weather.get_reference_time('date').time()
         if ref_date < start_date or ref_date >= finish_date:
             continue
-        temperature = weather.get_temperature('celsius')["temp"]
-        answer += f'В {ref_time.strftime("%H:%M")} будет {weather.get_detailed_status()}, температура - {temperature}\n'
+        temperature = "%.1f"%(weather.get_temperature('celsius')["temp"])
+        wind = "%.1f"%(weather.get_wind()['speed'])
+        answer += f'В {ref_time.strftime("%H:%M")} будет {weather.get_detailed_status()},🌡️ = {temperature} °C, 💨 {wind} m/s \n\n'
 
     return answer

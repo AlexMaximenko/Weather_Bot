@@ -1,5 +1,6 @@
 import telebot
 import pyowm
+import apiai, json
 import pyowm.exceptions
 import config
 import time as tm
@@ -17,11 +18,11 @@ def starting(message):
                                                      one_time_keyboard=False)
     start_markup.row('/forecast', '/weather', '/hide')
     bot.send_message(message.chat.id, "Привет!\n")
-    bot.send_message(message.chat.id, "Чтобы скрыть клавиатуру, нажмите \hide\n")
+    bot.send_message(message.chat.id, "Чтобы скрыть клавиатуру, нажмите /hide\n")
     bot.send_message(message.chat.id,
-                     "Чтобы узнать прогноз на определенный день, нажмите \forecast\n")
+                     "Чтобы узнать прогноз на определенный день, нажмите /forecast\n")
     bot.send_message(message.chat.id,
-                     "Чтобы узнать текущую погоду, нажмите \weather",
+                     "Чтобы узнать текущую погоду, нажмите /weather",
                      reply_markup=start_markup)
 
 
@@ -30,6 +31,19 @@ def hiding(message):
     bot.send_message(message.chat.id,
                      'Клавиатура спрятана',
                      reply_markup=telebot.types.ReplyKeyboardRemove())
+
+
+@bot.message_handler(commands=['help'])
+def help(message):
+    start_markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True,
+                                                     one_time_keyboard=False)
+    start_markup.row('/forecast', '/weather', '/hide')
+    bot.send_message(message.chat.id, "Чтобы скрыть клавиатуру, введите /hide\n")
+    bot.send_message(message.chat.id,
+                     "Чтобы узнать прогноз на определенный день, введите /forecast\n")
+    bot.send_message(message.chat.id,
+                     "Чтобы узнать текущую погоду, введите /weather",
+                     reply_markup=start_markup)
 
 
 @bot.message_handler(commands=['weather'])
@@ -157,10 +171,26 @@ def send_forecast_5(message):
 
 @bot.message_handler(content_types=['text'])
 def send_text(message):
-    if message.text.lower() == 'привет':
-        bot.send_message(message.chat.id, 'Привет')
-    elif message.text.lower() == 'пока':
-        bot.send_message(message.chat.id, 'Пока')
+    if message.text.lower().find('прогноз') > -1:
+        forecast_day_request(message)
+        return
+    elif message.text.lower().find('погод') > -1:
+        city_request = bot.send_message(message.chat.id,
+                                        'Введите город, в котором хотите узнать погоду')
+        bot.register_next_step_handler(city_request, send_weather)
+        return
+
+    request = apiai.ApiAI(config.APIAI_TOKEN).text_request()
+    request.lang = 'ru' # На каком языке будет послан запрос
+    request.session_id = 'BatlabAIBot' # ID Сессии диалога (нужно, чтобы потом учить бота)
+    request.query = message.text # Посылаем запрос к ИИ с сообщением от юзера
+    responseJson = json.loads(request.getresponse().read().decode('utf-8'))
+    response = responseJson['result']['fulfillment']['speech'] # Разбираем JSON и вытаскиваем ответ
+    # Если есть ответ от бота - присылаем юзеру, если нет - бот его не понял
+    if response:
+        bot.send_message(message.chat.id, response)
+    else:
+        bot.send_message(message.chat.id, 'Я Вас не совсем понял!')
 
 while True:
 	try:
