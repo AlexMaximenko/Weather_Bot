@@ -73,11 +73,7 @@ def forecast_day_request(message):
         day = months[(today+delta).month] + ', '+(today + delta).strftime(("%d"))
         possible_days.append(day)
 
-    day_markup.row(possible_days[0],
-                   possible_days[1],
-                   possible_days[2],
-                   possible_days[3],
-                   possible_days[4])
+    day_markup.row(*possible_days)
     request =  bot.send_message(message.chat.id,
                                     'В какой день вы хотите узнать погоду?',
                                     reply_markup=day_markup)
@@ -98,75 +94,28 @@ def forecast_city_request(message):
                          "❌Выбирайте день только из предложенных ниже!",
                          reply_markup=telebot.types.ReplyKeyboardRemove())
     else:
-        send_forecast = {possible_days[0]: send_forecast_1,
-                        possible_days[1]: send_forecast_2,
-                        possible_days[2]: send_forecast_3,
-                        possible_days[3]: send_forecast_4,
-                        possible_days[4]: send_forecast_5}
-        next_handler = send_forecast.get(message.text)
+        handler = {possible_days[0]: send_forecast(1),
+                possible_days[1]: send_forecast(2),
+                possible_days[2]: send_forecast(3),
+                possible_days[3]: send_forecast(4),
+                possible_days[4]: send_forecast(5)}
         request = bot.send_message(message.chat.id,
                                         'Введите город, в котором хотите узнать погоду')
-        bot.register_next_step_handler(request, next_handler)
+        bot.register_next_step_handler(request, handler.get(message.text))
 
+def send_forecast(days):
+    def forecast(message):
+        try:
+            get_forecast(message.text, days)
+        except pyowm.exceptions.api_response_error.NotFoundError:
+            bot.send_message(message.chat.id,
+                             '❌Город не найден, убедитесь в правильности написания',
+                             reply_markup=telebot.types.ReplyKeyboardRemove())
 
-def send_forecast_1(message):
-    try:
-        get_forecast(message.text, 1)
-    except pyowm.exceptions.api_response_error.NotFoundError:
         bot.send_message(message.chat.id,
-                         '❌Город не найден, убедитесь в правильности написания',
-                         reply_markup=telebot.types.ReplyKeyboardRemove())
-
-    bot.send_message(message.chat.id,
-                     get_forecast(city=message.text, days=1),
-                     reply_markup=telebot.types.ReplyKeyboardRemove())
-
-def send_forecast_2(message):
-    try:
-        get_forecast(message.text, 2)
-    except pyowm.exceptions.api_response_error.NotFoundError:
-        bot.send_message(message.chat.id,
-                         '❌Город не найден, убедитесь в правильности написания',
-                         reply_markup=telebot.types.ReplyKeyboardRemove())
-
-    bot.send_message(message.chat.id,
                      get_forecast(city=message.text, days=2),
                      reply_markup=telebot.types.ReplyKeyboardRemove())
-
-def send_forecast_3(message):
-    try:
-        get_forecast(city=message.text, days=3)
-    except pyowm.exceptions.api_response_error.NotFoundError:
-        bot.send_message(message.chat.id,
-                         '❌Город не найден, убедитесь в правильности написания',
-                         reply_markup=telebot.types.ReplyKeyboardRemove())
-    bot.send_message(message.chat.id,
-                     get_forecast(city=message.text, days=3),
-                     reply_markup=telebot.types.ReplyKeyboardRemove())
-
-def send_forecast_4(message):
-    try:
-        get_forecast(message.text, 4)
-    except pyowm.exceptions.api_response_error.NotFoundError:
-        bot.send_message(message.chat.id,
-                         '❌Город не найден, убедитесь в правильности написания',
-                         reply_markup=telebot.types.ReplyKeyboardRemove())
-
-    bot.send_message(message.chat.id,
-                     get_forecast(city=message.text, days=4),
-                     reply_markup=telebot.types.ReplyKeyboardRemove())
-
-def send_forecast_5(message):
-    try:
-        get_forecast(message.text, 5)
-    except pyowm.exceptions.api_response_error.NotFoundError:
-        bot.send_message(message.chat.id,
-                         '❌Город не найден, убедитесь в правильности написания',
-                         reply_markup=telebot.types.ReplyKeyboardRemove())
-
-    bot.send_message(message.chat.id,
-                     get_forecast(city=message.text, days=5),
-                     reply_markup=telebot.types.ReplyKeyboardRemove())
+    return forecast
 
 
 @bot.message_handler(content_types=['text'])
@@ -181,12 +130,11 @@ def send_text(message):
         return
 
     request = apiai.ApiAI(config.APIAI_TOKEN).text_request()
-    request.lang = 'ru' # На каком языке будет послан запрос
-    request.session_id = 'BatlabAIBot' # ID Сессии диалога (нужно, чтобы потом учить бота)
-    request.query = message.text # Посылаем запрос к ИИ с сообщением от юзера
+    request.lang = 'ru'
+    request.session_id = 'BatlabAIBot'
+    request.query = message.text
     responseJson = json.loads(request.getresponse().read().decode('utf-8'))
-    response = responseJson['result']['fulfillment']['speech'] # Разбираем JSON и вытаскиваем ответ
-    # Если есть ответ от бота - присылаем юзеру, если нет - бот его не понял
+    response = responseJson['result']['fulfillment']['speech']
     if response:
         bot.send_message(message.chat.id, response)
     else:
